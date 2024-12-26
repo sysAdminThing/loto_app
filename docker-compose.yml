@@ -1,0 +1,9 @@
+services:
+  app:
+    build: .
+    ports:
+      - 6006:6006
+    volumes:
+      - .:/LOTO_APP
+    environment:
+      FLASK_DEBUG: 1

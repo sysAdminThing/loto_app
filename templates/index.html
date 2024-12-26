@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Loto Game</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+
+    <style>
+ /* Base styles (for larger screens) */
+body {
+    font-family: 'Poppins', Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    background: linear-gradient(135deg, #6e8efb, #a777e3);
+    color: white;
+    text-align: center;
+}
+
+h1 {
+    margin-top: 20px;
+    font-size: 2.5em;
+    font-weight: bold;
+}
+
+.game-container {
+    max-width: 800px;
+    margin: 20px auto;
+    padding: 20px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 15px;
+    box-shadow: 0px 10px 20px rgba(0, 0, 0, 0.2);
+}
+
+button {
+    padding: 12px 24px;
+    margin: 10px;
+    font-size: 16px;
+    cursor: pointer;
+    border: none;
+    border-radius: 25px;
+    background: #4CAF50;
+    color: white;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+button:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 5px 10px rgba(0, 0, 0, 0.3);
+    opacity: 0.95;
+}
+
+#picked-number {
+    font-size: 1.5em;
+    margin-top: 20px;
+    font-weight: bold;
+    color: #FFD700;
+    background: rgba(0, 0, 0, 0.2);
+    padding: 10px;
+    border-radius: 10px;
+    display: inline-block;
+}
+
+#all-numbers {
+    margin-top: 20px;
+    font-size: 1.2em;
+    background: rgba(0, 0, 0, 0.1);
+    padding: 10px;
+    border-radius: 10px;
+    color: #FFEB3B;
+}
+
+.action-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 10px;
+}
+
+.card {
+    display: inline-block;
+    margin: 5px;
+    padding: 10px;
+    width: 40px;
+    height: 40px;
+    line-height: 40px;
+    font-weight: bold;
+    text-align: center;
+    border-radius: 50%;
+    background: #FFD700;
+    color: #333;
+    box-shadow: 0 5px 10px rgba(0, 0, 0, 0.3);
+    animation: fadeIn 0.5s ease;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: scale(0.8);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+.surprise-box {
+    display: none;
+    position: fixed;  /* Changed to 'fixed' to ensure it stays in place */
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);  /* Center the box */
+    background: url('{{ url_for('static', filename='sack.png') }}') no-repeat center center;
+    background-size: 400px 400px;  /* Resize the background image to 400x400 */
+    padding: 200px;
+    font-size: 2em;
+    font-weight: bold;
+    border-radius: 10px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0);
+    animation: bounce 1s ease infinite, shake 0.5s ease-out 1; /* Added shake effect */
+}
+
+@keyframes bounce {
+    0%, 50% {
+        transform: translate(-50%, -50%);
+    }
+    50% {
+        transform: translate(-50%, -55%);
+    }
+}
+
+@keyframes shake {
+    0% {
+        transform: translate(-50%, -50%) translateX(0); /* Keep at the center */
+    }
+    25% {
+        transform: translate(-50%, -50%) translateX(-5px); /* Shake to the left */
+    }
+    50% {
+        transform: translate(-50%, -50%) translateX(5px); /* Shake to the right */
+    }
+    75% {
+        transform: translate(-50%, -50%) translateX(-5px); /* Shake to the left */
+    }
+    100% {
+        transform: translate(-50%, -50%) translateX(5px); /* Shake to the right */
+    }
+}
+
+/* Pin Last Picked Number to the top */
+#last-picked {
+    position: fixed;
+    top: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0, 0, 0, 0.6);
+    color: #FFD700;
+    font-size: 1.5em;
+    font-weight: bold;
+    padding: 20px 20px;
+    border-radius: 20px;
+    box-shadow: 0 5px 10px rgba(0, 0, 0, 0.3);
+}
+
+/* Mobile Styles */
+@media (max-width: 768px) {
+    h1 {
+        font-size: 2em;
+    }
+
+    .game-container {
+        padding: 15px;
+        max-width: 90%;
+    }
+
+    button {
+        padding: 10px 20px;
+        font-size: 14px;
+    }
+
+    #picked-number {
+        font-size: 1.2em;
+        padding: 8px;
+    }
+
+    #all-numbers {
+        font-size: 1em;
+        padding: 8px;
+    }
+
+    .card {
+        width: 35px;
+        height: 35px;
+        line-height: 35px;
+        font-size: 1.2em;
+    }
+
+    #last-picked {
+        top: 80px;
+        left: 50%;
+        transform: translateX(-50%);
+        font-size: 1.2em;
+    }
+
+    .surprise-box {
+        padding: 100px;
+        font-size: 1.5em;
+    }
+}
+
+@media (max-width: 480px) {
+    h1 {
+        font-size: 1.5em;
+    }
+
+    .game-container {
+        padding: 10px;
+        max-width: 95%;
+    }
+
+    button {
+        padding: 8px 16px;
+        font-size: 12px;
+    }
+
+    #picked-number {
+        font-size: 1.1em;
+        padding: 6px;
+    }
+
+    #all-numbers {
+        font-size: 0.9em;
+        padding: 6px;
+    }
+
+    .card {
+        width: 30px;
+        height: 30px;
+        line-height: 30px;
+        font-size: 1em;
+    }
+
+    #last-picked {
+        top: 10px;
+        left: 50%;
+        transform: translateX(-50%);
+        font-size: 1.1em;
+    }
+
+    .surprise-box {
+        padding: 200px;
+        font-size: 1.2em;
+    }
+}
+
+</style>
+</head>
+<body>
+<div>
+    <br><br>
+</div>
+    <h1><br>Loto Game</h1>
+    <div id="last-picked">Last </div>
+
+    <div class="game-container">
+        <div>
+            <button id="pick-number-btn">Take Number</button>
+        </div>
+        <div id="picked-number">Pick a number to start!</div>
+        <div id="all-numbers"></div>
+
+        <div class="action-buttons" >
+            <button id="show-all-btn" style="background-color: #007BFF;">Show All Picked Numbers</button>
+        </div>
+        <div class="action-buttons" style="margin-top:100px;">
+            <button id="new-game-btn" style="background-color: #9C27B0;">Start New Game</button>
+
+        </div>
+    </div>
+
+<audio id="surprise-sound" src="{{ url_for('static', filename='sound1.mp3') }}" preload="auto"></audio>
+
+  <script>
+    const synth = window.speechSynthesis;
+
+    function speakNumber(number) {
+        const utterance = new SpeechSynthesisUtterance(number);
+        const availableVoices = synth.getVoices();
+        const trVoice = availableVoices.find(voice => voice.lang === 'tr-TR');
+        if (trVoice) {
+            utterance.voice = trVoice;
+        } else {
+            utterance.lang = 'tr-TR';
+        }
+        synth.speak(utterance);
+    }
+
+    let showAll = false;  // Flag to toggle between showing all numbers or last 5
+
+    $('#pick-number-btn').click(function() {
+        const surpriseBox = $('<div class="surprise-box"></div>');
+        $('body').append(surpriseBox);
+        surpriseBox.fadeIn().delay(2000).fadeOut(function() {
+            $.post("/pick_number", function (data) {
+                const pickedNumber = data.data[data.data.length - 1];
+                surpriseBox.text("Picked Number: " + pickedNumber);
+                speakNumber(pickedNumber);
+                $('#last-picked').text("Last Picked: " + pickedNumber); // Update pinned element
+
+                // Update the list of numbers (always show last 5 by default)
+                updatePickedNumbers(data.data);
+            });
+        });
+        const sound = document.getElementById("surprise-sound");
+        sound.play();
+    });
+
+    // Update the display with either all numbers or the last 5
+    function updatePickedNumbers(allNumbers) {
+        const numbersToDisplay = showAll ? allNumbers : allNumbers.slice(-5);  // Display all or last 5
+        $('#all-numbers').html(numbersToDisplay.map(num => `<div class="card">${num}</div>`).join(''));
+    }
+
+    // Toggle between showing all numbers or just the last 5
+    $('#show-all-btn').click(function () {
+        showAll = !showAll;  // Toggle the flag
+        $.get("/show_all_picked", function (data) {
+            // Update the display based on the showAll flag
+            updatePickedNumbers(data.data);
+        });
+
+        // Change button text based on whether showing all or not
+        if (showAll) {
+            $(this).text("Hide All Picked Numbers");
+        } else {
+            $(this).text("Show All Picked Numbers");
+        }
+    });
+
+    $('#clear-btn').click(function () {
+        $.post("/clear_number", function () {
+            $('#picked-number').text("All numbers cleared.");
+            $('#all-numbers').html("");
+            $('#last-picked').text("Last Picked: None"); // Reset pinned element
+        });
+    });
+
+    $('#new-game-btn').click(function () {
+        $.post("/start_new_game", function () {
+            $('#picked-number').text("New game started!");
+            $('#all-numbers').html("");
+            $('#last-picked').text("Last Picked: None"); // Reset pinned element
+        });
+    });
+
+    // Initial load to display the last 5 numbers
+    $(document).ready(function () {
+        $.get("/show_all_picked", function (data) {
+            updatePickedNumbers(data.data);
+        });
+    });
+</script>
+
+<!-- Include the confetti library -->
+
+
+</body>
+</html>
