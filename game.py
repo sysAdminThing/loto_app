@@ -1,8 +1,6 @@
-import random
-import json
-import os
+from . import os, json, random, jsonify
 
-from flask import jsonify
+
 
 # Path to the file where numbers will be saved
 data_file = "taken_numbers.json"
