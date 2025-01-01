@@ -256,32 +256,39 @@ button:hover {
 </style>
 </head>
 <body>
-<div>
-    <br><br>
+<div class="game-container">
+    <div id="all-numbers"></div>
+
+    <div class="action-buttons">
+    <button id="pick-number-btn" style="background-color: #007BFF;">Pick Number</button>
+    <button id="show-all-btn" style="background-color: #28A745;">Show All Picked Numbers</button>
+    <button id="sort-btn" style="background-color: #FFC107; display: none;">Sort Numbers</button>
 </div>
-    <h1><br>Loto Game</h1>
-    <div id="last-picked">Last </div>
 
-    <div class="game-container">
-        <div>
-            <button id="pick-number-btn">Take Number</button>
-        </div>
-        <div id="picked-number">Pick a number to start!</div>
-        <div id="all-numbers"></div>
-
-        <div class="action-buttons" >
-            <button id="show-all-btn" style="background-color: #007BFF;">Show All Picked Numbers</button>
-        </div>
-        <div class="action-buttons" style="margin-top:100px;">
-            <button id="new-game-btn" style="background-color: #9C27B0;">Start New Game</button>
-
+    <div class="game-settings" style="margin-top: 50px;">
+        <h3>Settings</h3>
+        <label>
+            <input type="radio" name="mode" value="manual" checked> Manual Mode
+        </label>
+        <label style="margin-left: 20px;">
+            <input type="radio" name="mode" value="automatic"> Automatic Mode
+        </label>
+        <br><br>
+        <div id="interval-setting" style="display: none;">
+            <label for="interval">Interval (seconds):</label>
+            <input type="number" id="interval" value="2" min="1" style="width: 50px;"> seconds
         </div>
     </div>
+        <button class="game-container" id="new-game-btn" style="background-color: #FF5733; margin-top:50px; margin-right:-75%;">New Game</button>
 
-<audio id="surprise-sound" src="{{ url_for('static', filename='sound1.mp3') }}" preload="auto"></audio>
+</div>
 
-  <script>
+
+<script>
     const synth = window.speechSynthesis;
+    let showAll = false;
+    let isSorted = false; // Flag to determine if numbers should be sorted
+    let intervalId = null;
 
     function speakNumber(number) {
         const utterance = new SpeechSynthesisUtterance(number);
@@ -295,71 +302,123 @@ button:hover {
         synth.speak(utterance);
     }
 
-    let showAll = false;  // Flag to toggle between showing all numbers or last 5
+    // Update picked numbers display
+    function updatePickedNumbers(allNumbers) {
+        const numbersToDisplay = showAll ? allNumbers : allNumbers.slice(-5);
 
-    $('#pick-number-btn').click(function() {
+        // Sort numbers if the isSorted flag is true
+        const sortedNumbers = isSorted
+            ? numbersToDisplay.slice().sort((a, b) => a - b)
+            : numbersToDisplay;
+
+        $('#all-numbers').html(
+            sortedNumbers.map(num => `<div class="card">${num}</div>`).join('')
+        );
+    }
+
+    // Sort button logic
+    $('#sort-btn').click(function () {
+        isSorted = !isSorted; // Toggle the sorting flag
+        $.get("/show_all_picked", function (data) {
+            updatePickedNumbers(data.data); // Refresh the display with the updated sorting
+        });
+
+        $(this).text(isSorted ? "Unsort Numbers" : "Sort Numbers"); // Update button text
+    });
+
+    // Pick number logic
+    function pickNumber() {
         const surpriseBox = $('<div class="surprise-box"></div>');
         $('body').append(surpriseBox);
-        surpriseBox.fadeIn().delay(2000).fadeOut(function() {
+        surpriseBox.fadeIn().delay(100).fadeOut(function () {
             $.post("/pick_number", function (data) {
                 const pickedNumber = data.data[data.data.length - 1];
                 surpriseBox.text("Picked Number: " + pickedNumber);
                 speakNumber(pickedNumber);
-                $('#last-picked').text("Last Picked: " + pickedNumber); // Update pinned element
-
-                // Update the list of numbers (always show last 5 by default)
+                $('#last-picked').text("Last Picked: " + pickedNumber);
                 updatePickedNumbers(data.data);
             });
         });
         const sound = document.getElementById("surprise-sound");
         sound.play();
-    });
-
-    // Update the display with either all numbers or the last 5
-    function updatePickedNumbers(allNumbers) {
-        const numbersToDisplay = showAll ? allNumbers : allNumbers.slice(-5);  // Display all or last 5
-        $('#all-numbers').html(numbersToDisplay.map(num => `<div class="card">${num}</div>`).join(''));
     }
 
-    // Toggle between showing all numbers or just the last 5
-    $('#show-all-btn').click(function () {
-        showAll = !showAll;  // Toggle the flag
-        $.get("/show_all_picked", function (data) {
-            // Update the display based on the showAll flag
-            updatePickedNumbers(data.data);
-        });
+    // Automatic picking logic
+    function startAutomaticMode(interval) {
+        stopAutomaticMode(); // Clear any existing interval
+        intervalId = setInterval(pickNumber, interval * 1000);
+    }
 
-        // Change button text based on whether showing all or not
-        if (showAll) {
-            $(this).text("Hide All Picked Numbers");
-        } else {
-            $(this).text("Show All Picked Numbers");
+    function stopAutomaticMode() {
+        if (intervalId) {
+            clearInterval(intervalId);
+            intervalId = null;
+        }
+    }
+
+    // Event listeners
+    $('#pick-number-btn').click(function () {
+        pickNumber();
+    });
+
+    $('#show-all-btn').click(function () {
+        showAll = !showAll;
+        $.get("/show_all_picked", function (data) {
+            updatePickedNumbers(data.data);
+
+            // Show or hide the sort button based on the showAll flag
+            if (showAll) {
+                $('#sort-btn').show(); // Show sort button when displaying all numbers
+            } else {
+                $('#sort-btn').hide(); // Hide sort button when not displaying all numbers
+                isSorted = false; // Reset sorting flag when hiding all numbers
+                $('#sort-btn').text("Sort Numbers"); // Reset sort button text
+            }
+        });
+        $(this).text(showAll ? "Hide All Picked Numbers" : "Show All Picked Numbers");
+    });
+
+     $('#new-game-btn').click(function () {
+        const confirmation = confirm("Are you sure you want to start a new game? This will reset all picked numbers.");
+        if (confirmation) {
+            $.post("/start_new_game", function () {
+                $('#picked-number').text("New game started!");
+                $('#all-numbers').html("");
+                $('#last-picked').text("Last Picked: None");
+                $('#sort-btn').hide(); // Hide the sort button on new game
+            });
         }
     });
 
-    $('#clear-btn').click(function () {
-        $.post("/clear_number", function () {
-            $('#picked-number').text("All numbers cleared.");
-            $('#all-numbers').html("");
-            $('#last-picked').text("Last Picked: None"); // Reset pinned element
-        });
+    // Settings
+    $('input[name="mode"]').change(function () {
+        const mode = $(this).val();
+        if (mode === "automatic") {
+            $('#interval-setting').show();
+            const interval = parseInt($('#interval').val());
+            startAutomaticMode(interval);
+        } else {
+            $('#interval-setting').hide();
+            stopAutomaticMode();
+        }
     });
 
-    $('#new-game-btn').click(function () {
-        $.post("/start_new_game", function () {
-            $('#picked-number').text("New game started!");
-            $('#all-numbers').html("");
-            $('#last-picked').text("Last Picked: None"); // Reset pinned element
-        });
+    $('#interval').change(function () {
+        const interval = parseInt($(this).val());
+        if (intervalId) {
+            startAutomaticMode(interval);
+        }
     });
 
-    // Initial load to display the last 5 numbers
+    // Initial load
     $(document).ready(function () {
         $.get("/show_all_picked", function (data) {
             updatePickedNumbers(data.data);
         });
+        $('#sort-btn').hide(); // Initially hide the sort button
     });
 </script>
+
 
 <!-- Include the confetti library -->
 

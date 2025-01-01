@@ -60,12 +60,11 @@ def start_new_game_route():
 @main.route('/login', methods=['POST','GET'])
 def login():
     if 'username' in session:
-        print('true')
         return redirect(url_for('main.index'))
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
-        if username=='loto_game' and password=='loto_game123!':
+        if username=='a' and password=='a':
             session['username'] = username
             return redirect(url_for('/.index'))
         else:
