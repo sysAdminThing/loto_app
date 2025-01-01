@@ -6,6 +6,8 @@ __pycache__/
 # C extensions
 *.so
 
+taken_numbers.json
+
 # Distribution / packaging
 .Python
 build/
